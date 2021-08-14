@@ -38,19 +38,30 @@ export default function NFTUpload({nftStored, setNftStored}) {
             Currently uploading and pinning
             </>)
         });
-        const metadata = await nftSotrageClient.store({
-            name: title,
-            description: description,
-            image: uploadedFile,
-        });
-        notification['success']({
+        try {
+            const metadata = await nftSotrageClient.store({
+              name: title,
+              description: description,
+              image: uploadedFile,
+          });
+          notification['success']({
+              key,
+              message: "NFT pinned",
+              description: (<>
+              Hosted via NFT.Storage at {metadata.url}
+              </>)
+          });
+          setNftStored(metadata.ipnft);
+        }
+        catch( err ) {
+          notification['warn']({
             key,
-            message: "NFT pinned",
+            message: "NFT pinning failed",
             description: (<>
-            Hosted via NFT.Storage at {metadata.url}
+            err.
             </>)
         });
-        setNftStored(metadata.ipnft);
+        }
       }
   }
 

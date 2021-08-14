@@ -3,10 +3,9 @@ import { utils } from "ethers";
 import { Button, Card, DatePicker, Divider, Input, List, Progress, Slider, Spin, Switch } from "antd";
 import React, { useState } from "react";
 import { Address, Balance, NFTUpload } from "../components";
+import { useEventListener } from "../hooks";
 
 export default function Factory({
-  purpose,
-  setPurposeEvents,
   address,
   mainnetProvider,
   localProvider,
@@ -16,9 +15,9 @@ export default function Factory({
   readContracts,
   writeContracts,
 }) {
-  const [newPurpose, setNewPurpose] = useState("loading...");
   const [mintCount, setMintCount] = useState(1);
   const [nftStored, setNftStored] = useState("");
+  const events = useEventListener(writeContracts, "NFTFactory", "Transfer", localProvider, 1);
 
   return (
     <div>
@@ -26,42 +25,7 @@ export default function Factory({
         ⚙️ Here is an example UI that displays and sets the purpose in your smart contract:
       */}
       <div style={{ border: "1px solid #cccccc", padding: 16, width: 400, margin: "auto", marginTop: 64 }}>
-        <h2>Fraktory:</h2>
-        <h4>purpose: {purpose}</h4>
-        <Divider />
-        <div style={{ margin: 8 }}>
-          <Input
-            onChange={e => {
-              setNewPurpose(e.target.value);
-            }}
-          />
-          <Button
-            style={{ marginTop: 8 }}
-            onClick={async () => {
-              /* look how you call setPurpose on your contract: */
-              /* notice how you pass a call back for tx updates too */
-              const result = tx(writeContracts.YourContract.setPurpose(newPurpose), update => {
-                console.log("📡 Transaction Update:", update);
-                if (update && (update.status === "confirmed" || update.status === 1)) {
-                  console.log(" 🍾 Transaction " + update.hash + " finished!");
-                  console.log(
-                    " ⛽️ " +
-                    update.gasUsed +
-                    "/" +
-                    (update.gasLimit || update.gas) +
-                    " @ " +
-                    parseFloat(update.gasPrice) / 1000000000 +
-                    " gwei",
-                  );
-                }
-              });
-              console.log("awaiting metamask/web3 confirm result...", result);
-              console.log(await result);
-            }}
-          >
-            Set Purpose!
-          </Button>
-        </div>
+        <h2>Mint an NFT</h2>
         <Divider />
         <NFTUpload {...{nftStored, setNftStored}}/>
         <Input
@@ -83,7 +47,7 @@ export default function Factory({
           }
           else {
             console.log("Attempting mint", address, nftStored);
-            const result = tx(writeContracts.TicketFactory.mint(1, address, nftStored), update => {
+            const result = tx(writeContracts.NFTFactory.mint(1, address, nftStored), update => {
               console.log("📡 Transaction Update:", update);
               if (update && (update.status === "confirmed" || update.status === 1)) {
                 console.log(" 🍾 Transaction " + update.hash + " finished!");
@@ -113,7 +77,7 @@ export default function Factory({
         <Divider />
         Your Contract Address:
         <Address
-          address={readContracts && readContracts.YourContract ? readContracts.YourContract.address : null}
+          address={readContracts && readContracts.ERC777Distributor ? readContracts.ERC777Distributor.address : null}
           ensProvider={mainnetProvider}
           fontSize={16}
         />
@@ -127,12 +91,12 @@ export default function Factory({
         <h2>Events:</h2>
         <List
           bordered
-          dataSource={setPurposeEvents}
+          dataSource={events}
           renderItem={item => {
             return (
               <List.Item key={item.blockNumber + "_" + item.sender + "_" + item.purpose}>
-                <Address address={item[0]} ensProvider={mainnetProvider} fontSize={16} />
-                {item[1]}
+                <Address address={item[1]} ensProvider={mainnetProvider} fontSize={16} />
+                {item[2]}
               </List.Item>
             );
           }}

@@ -5,12 +5,12 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
     const {deploy} = hre.deployments;
     const { deployer } = await hre.getNamedAccounts();
     console.log('pre deploy')
-    const TicketFactory = await deploy("TicketFactory", {
+    const TicketFactory = await deploy("NFTFactory", {
         from: deployer,
         log: true,
         args: ["0xf57b2c51ded3a29e6891aba85459d600256cf317"],
     });
-    console.log(await TicketFactory.receipt);
+    await TicketFactory.receipt;
 
     const superfluidHost = "0xeD5B5b32110c3Ded02a07c8b8e97513FAfb883B6";
     const ida = "0x32E0ecb72C1dDD92B007405F8102c1556624264D";
@@ -26,7 +26,7 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
             []
         ]
     })
-    console.log(await ERC777Distributor.receipt);
+    await ERC777Distributor.receipt;
     console.log("Single distributor deployed");
 
     const DistributorFactory = await deploy("DistributorFactory", {
@@ -38,10 +38,9 @@ const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
             ERC777Distributor.receipt?.contractAddress
         ]
     })
+    await DistributorFactory.receipt;
 
     console.log("Deployments complete");
 
 };
 export default func;
-const tags = ["hdnft"]; 
-export { tags };

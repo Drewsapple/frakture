@@ -2,9 +2,9 @@
 
 pragma solidity ^0.8.0;
 
-import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
-import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
-import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts-upgradeable/token/ERC721/ERC721Upgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/token/ERC721/extensions/ERC721EnumerableUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 import "@openzeppelin/contracts/utils/Strings.sol";
 
@@ -21,18 +21,29 @@ contract ProxyRegistry {
  * @title ERC721Tradable
  * ERC721Tradable - ERC721 contract that whitelists a trading address, and has minting functionality.
  */
-abstract contract ERC721Tradable is ContextMixin, ERC721Enumerable, NativeMetaTransaction, Ownable {
+contract ERC721Tradable is ContextMixin, ERC721EnumerableUpgradeable, OwnableUpgradeable, NativeMetaTransaction {
     using SafeMath for uint256;
 
     address proxyRegistryAddress;
-    uint256 private _currentTokenId = 0; // The next tokenid to be minted
+    uint256 private _currentTokenId; // The next tokenid to be minted
     mapping(uint256 => string) private _CIDS;
 
     constructor(
         string memory _name,
         string memory _symbol,
         address _proxyRegistryAddress
-    ) ERC721(_name, _symbol) {
+    ) {
+        __ERC721Tradable_init(_name, _symbol, _proxyRegistryAddress);
+    }
+
+    function __ERC721Tradable_init(
+        string memory _name,
+        string memory _symbol,
+        address _proxyRegistryAddress
+    ) public initializer {
+        __Ownable_init_unchained();
+        __ERC721_init(_name,_symbol);
+
         proxyRegistryAddress = _proxyRegistryAddress;
         _initializeEIP712(_name);
     }
@@ -63,7 +74,9 @@ abstract contract ERC721Tradable is ContextMixin, ERC721Enumerable, NativeMetaTr
         _currentTokenId++;
     }
 
-    function baseTokenURI() virtual public pure returns (string memory);
+    function baseTokenURI() public pure returns (string memory) {
+        return "ipfs://";
+    }
 
     function tokenURI(uint256 _tokenId) override public view returns (string memory) {
         return string(abi.encodePacked(baseTokenURI(), _CIDS[_tokenId], string("/metadata.json")));

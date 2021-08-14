@@ -5,9 +5,9 @@ pragma solidity ^0.8.0;
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/Strings.sol";
 import "./IFactoryERC721.sol";
-import "./Ticket.sol";
+import "./ERC721Tradable.sol";
 
-contract TicketFactory is FactoryERC721, Ownable {
+contract NFTFactory is FactoryERC721, Ownable {
     using Strings for string;
 
     event Transfer(
@@ -17,7 +17,7 @@ contract TicketFactory is FactoryERC721, Ownable {
     );
 
     address public proxyRegistryAddress;
-    address public ticketContractAddress;
+    address public nftContractAddress;
     string public baseURI = "ipfs://";
 
     /*
@@ -27,17 +27,17 @@ contract TicketFactory is FactoryERC721, Ownable {
 
     constructor(address _proxyRegistryAddress) {
         proxyRegistryAddress = _proxyRegistryAddress;
-        ticketContractAddress = address(
-            new Ticket(_proxyRegistryAddress, address(this))
+        nftContractAddress = address(
+            new ERC721Tradable("NFT", "frk", _proxyRegistryAddress)
         );
     }
 
     function name() override external pure returns (string memory) {
-        return "Ticket";
+        return "NFT";
     }
 
     function symbol() override external pure returns (string memory) {
-        return "tix";
+        return "frk";
     }
 
     function supportsFactoryInterface() override public pure returns (bool) {
@@ -55,17 +55,17 @@ contract TicketFactory is FactoryERC721, Ownable {
         assert(
             address(proxyRegistry.proxies(owner())) == _msgSender() ||
                 owner() == _msgSender() ||
-                _msgSender() == ticketContractAddress
+                _msgSender() == nftContractAddress
         );
         require(canMint(_tokenId));
 
-        Ticket openSeaTicket = Ticket(ticketContractAddress);
-        openSeaTicket.mintTo(_toAddress, _CID);
+        ERC721Tradable openSeaNFT = ERC721Tradable(nftContractAddress);
+        openSeaNFT.mintTo(_toAddress, _CID);
     }
 
     function canMint(uint256 /*_tokenId*/) override public view returns (bool) {
-        Ticket openSeaTicket = Ticket(ticketContractAddress);
-        uint256 creatureSupply = openSeaTicket.totalSupply();
+        ERC721Tradable openSeaNFT = ERC721Tradable(nftContractAddress);
+        uint256 creatureSupply = openSeaNFT.totalSupply();
 
         uint256 numItemsAllocated = 1;
         return creatureSupply < (CREATURE_SUPPLY - numItemsAllocated);
