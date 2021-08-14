@@ -17,6 +17,8 @@ export default function Factory({
   writeContracts,
 }) {
   const [newPurpose, setNewPurpose] = useState("loading...");
+  const [mintCount, setMintCount] = useState(1);
+  const [nftStored, setNftStored] = useState("");
 
   return (
     <div>
@@ -61,10 +63,11 @@ export default function Factory({
           </Button>
         </div>
         <Divider />
-        <NFTUpload />
+        <NFTUpload {...{nftStored, setNftStored}}/>
         <Input
           placeholder="# of NFTs to mint"
-          onChange={e => {}}
+          type="number"
+          onChange={e => {setMintCount(e.target.value)}}
         />
         <Input
           placeholder="# of distribution tokens to mint"
@@ -75,7 +78,27 @@ export default function Factory({
           onChange={e => {}}
         />
         <Button onClick={async () => {
-
+          if(mintCount < 1 || nftStored == "") {
+            console.error("Fill the full form, please")
+          }
+          else {
+            console.log("Attempting mint", address, nftStored);
+            const result = tx(writeContracts.TicketFactory.mint(1, address, nftStored), update => {
+              console.log("📡 Transaction Update:", update);
+              if (update && (update.status === "confirmed" || update.status === 1)) {
+                console.log(" 🍾 Transaction " + update.hash + " finished!");
+                console.log(
+                  " ⛽️ " +
+                  update.gasUsed +
+                  "/" +
+                  (update.gasLimit || update.gas) +
+                  " @ " +
+                  parseFloat(update.gasPrice) / 1000000000 +
+                  " gwei",
+                );
+              }
+            })
+          }
         }}>
           Deploy
         </Button>

@@ -1,14 +1,23 @@
-const { utils } = require("ethers");
-const fs = require("fs");
-const chalk = require("chalk");
+import { utils } from "ethers";
+import * as fs from 'fs';
+import chalk from "chalk";
+// const { utils } = require("ethers");
+// const fs = require("fs");
+// const chalk = require("chalk");
 
-require("@nomiclabs/hardhat-waffle");
-require("@tenderly/hardhat-tenderly");
+import { task } from "hardhat/config";
+import "@nomiclabs/hardhat-waffle";
+import "@tenderly/hardhat-tenderly";
+// require("@nomiclabs/hardhat-waffle");
+// require("@tenderly/hardhat-tenderly");
 
-require("hardhat-deploy");
+import "hardhat-deploy";
+// require("hardhat-deploy");
 
-require("@eth-optimism/hardhat-ovm");
-require("@nomiclabs/hardhat-ethers");
+import "@eth-optimism/hardhat-ovm";
+import "@nomiclabs/hardhat-ethers";
+// require("@eth-optimism/hardhat-ovm");
+// require("@nomiclabs/hardhat-ethers");
 
 const { isAddress, getAddress, formatUnits, parseUnits } = utils;
 
@@ -30,6 +39,7 @@ function mnemonic() {
   try {
     return fs.readFileSync("./mnemonic.txt").toString().trim();
   } catch (e) {
+    // @ts-ignore
     if (defaultNetwork !== "localhost") {
       console.log(
         "☢️ WARNING: No mnemonic file created for a deploy account. Try `yarn run generate` and then `yarn run account`."
@@ -196,7 +206,7 @@ module.exports = {
 
 const DEBUG = false;
 
-function debug(text) {
+function debug(text: string) {
   if (DEBUG) {
     console.log(text);
   }
@@ -220,24 +230,19 @@ task("fundedwallet", "Create a wallet (pk) link and fund it with deployer?")
     const privateKey = randomWallet._signingKey().privateKey;
     console.log("🔐 WALLET Generated as " + randomWallet.address + "");
     let url = taskArgs.url ? taskArgs.url : "http://localhost:3000";
-
-    let localDeployerMnemonic;
-    try {
-      localDeployerMnemonic = fs.readFileSync("./mnemonic.txt");
-      localDeployerMnemonic = localDeployerMnemonic.toString().trim();
-    } catch (e) {
-      /* do nothing - this file isn't always there */
-    }
-
+    
     let amount = taskArgs.amount ? taskArgs.amount : "0.01";
     const tx = {
       to: randomWallet.address,
       value: ethers.utils.parseEther(amount),
     };
 
-    //SEND USING LOCAL DEPLOYER MNEMONIC IF THERE IS ONE
-    // IF NOT SEND USING LOCAL HARDHAT NODE:
-    if (localDeployerMnemonic) {
+    let localDeployerMnemonic;
+    try {
+      //SEND USING LOCAL DEPLOYER MNEMONIC IF THERE IS ONE
+      // IF NOT SEND USING LOCAL HARDHAT NODE:
+      localDeployerMnemonic = fs.readFileSync("./mnemonic.txt").toString().trim();
+      // @ts-ignore
       let deployerWallet = new ethers.Wallet.fromMnemonic(
         localDeployerMnemonic
       );
@@ -252,7 +257,7 @@ task("fundedwallet", "Create a wallet (pk) link and fund it with deployer?")
       let sendresult = await deployerWallet.sendTransaction(tx);
       console.log("\n" + url + "/pk#" + privateKey + "\n");
       return;
-    } else {
+    } catch (e) {
       console.log(
         "💵 Sending " +
           amount +
@@ -391,10 +396,12 @@ task(
     var qrcode = require("qrcode-terminal");
     qrcode.generate(address);
     console.log("‍📬 Deployer Account is " + address);
+    // @ts-ignore
     for (let n in config.networks) {
       //console.log(config.networks[n],n)
       try {
         let provider = new ethers.providers.JsonRpcProvider(
+          // @ts-ignore
           config.networks[n].url
         );
         let balance = await provider.getBalance(address);
@@ -412,7 +419,7 @@ task(
   }
 );
 
-async function addr(ethers, addr) {
+async function addr(ethers: any, addr: any) {
   if (isAddress(addr)) {
     return getAddress(addr);
   }
@@ -442,8 +449,8 @@ task("balance", "Prints an account's balance")
     console.log(formatUnits(balance, "ether"), "ETH");
   });
 
-function send(signer, txparams) {
-  return signer.sendTransaction(txparams, (error, transactionHash) => {
+function send(signer: any, txparams: any) {
+  return signer.sendTransaction(txparams, (error: Error, transactionHash: string) => {
     if (error) {
       debug(`Error: ${error}`);
     }
@@ -477,21 +484,22 @@ task("send", "Send ETH")
       value: parseUnits(
         taskArgs.amount ? taskArgs.amount : "0",
         "ether"
-      ).toHexString(),
+      ),
       nonce: await fromSigner.getTransactionCount(),
       gasPrice: parseUnits(
         taskArgs.gasPrice ? taskArgs.gasPrice : "1.001",
         "gwei"
-      ).toHexString(),
+      ),
       gasLimit: taskArgs.gasLimit ? taskArgs.gasLimit : 24000,
       chainId: network.config.chainId,
+      data: taskArgs.data
     };
 
     if (taskArgs.data !== undefined) {
       txRequest.data = taskArgs.data;
       debug(`Adding data to payload: ${txRequest.data}`);
     }
-    debug(txRequest.gasPrice / 1000000000 + " gwei");
+    debug(txRequest.gasPrice.div(1000000000).toString() + " gwei");
     debug(JSON.stringify(txRequest, null, 2));
 
     return send(fromSigner, txRequest);

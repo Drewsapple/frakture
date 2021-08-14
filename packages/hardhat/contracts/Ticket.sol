@@ -9,7 +9,7 @@ import "./ERC721Tradable.sol";
  * Ticket - a contract for my non-fungible tickets.
  */
 contract Ticket is ERC721Tradable {
-    constructor(address _proxyRegistryAddress)
+    constructor(address _proxyRegistryAddress, address _factoryAddress)
         ERC721Tradable("Ticket", "Tix", _proxyRegistryAddress)
     {}
 

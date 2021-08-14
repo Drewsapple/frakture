@@ -11,7 +11,7 @@ const nftSotrageClient = new NFTStorage({ token: nftStorageKey });
 
 const { Dragger } = Upload;
 
-export default function NFTUpload(props) {
+export default function NFTUpload({nftStored, setNftStored}) {
   const [uploadedFile, setUploadedFile] = useState([]);
   const [title, setTitle] = useState("My NFT");
   const [description, setDescription] = useState("");
@@ -50,7 +50,7 @@ export default function NFTUpload(props) {
             Hosted via NFT.Storage at {metadata.url}
             </>)
         });
-        console.log(metadata);
+        setNftStored(metadata.ipnft);
       }
   }
 

@@ -25,7 +25,7 @@ abstract contract ERC721Tradable is ContextMixin, ERC721Enumerable, NativeMetaTr
     using SafeMath for uint256;
 
     address proxyRegistryAddress;
-    uint256 private _currentTokenId = 0;
+    uint256 private _currentTokenId = 0; // The next tokenid to be minted
     mapping(uint256 => string) private _CIDS;
 
     constructor(

@@ -9,39 +9,31 @@ import {
     SuperAppBase,
     SuperAppDefinitions
 } from "@superfluid-finance/ethereum-contracts/contracts/apps/SuperAppBase.sol";
-//from "https://github.com/superfluid-finance/protocol-monorepo/blob/remix-support/packages/ethereum-contracts/contracts/apps/SuperAppBase.sol";
 import {
     IInstantDistributionAgreementV1
 } from "@superfluid-finance/ethereum-contracts/contracts/interfaces/agreements/IInstantDistributionAgreementV1.sol";
-//from "https://github.com/superfluid-finance/protocol-monorepo/blob/remix-support/packages/ethereum-contracts/contracts/interfaces/agreements/IInstantDistributionAgreementV1.sol";
 
-import "@openzeppelin/contracts/token/ERC777/IERC777.sol";
-import "@openzeppelin/contracts/utils/introspection/IERC1820Registry.sol";
-import "@openzeppelin/contracts/token/ERC777/IERC777Recipient.sol";
+import "@openzeppelin/contracts-upgradeable/token/ERC777/IERC777Upgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/token/ERC777/ERC777Upgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/utils/introspection/IERC1820RegistryUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/token/ERC777/IERC777RecipientUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 
-contract ERC777Distributor is IERC777Recipient,SuperAppBase {
-
-    uint256 public totalDonations=0;
-    uint128 public totalShareUnits=0;
+contract ERC777Distributor is SuperAppBase, Initializable, OwnableUpgradeable, IERC777RecipientUpgradeable, ERC777Upgradeable {
+    uint128 public totalShareUnits;
     mapping (address=>uint128) shareMapping;
     mapping (address=>string) tokenNameMapping;
 
-    uint32 public constant INDEX_ID = 0;
-
-    address owner;
+    uint32 public constant INDEX_ID = 1;
 
     ISuperToken private _cashToken;
 
     ISuperToken private fDAIx;
-    ISuperToken private fUSDCx;
-    ISuperToken private fTUSDx;
-    ISuperToken private ETHx;
 
     ISuperfluid private _host;
     IInstantDistributionAgreementV1 private _ida;
-
-    IERC1820Registry private _erc1820 = IERC1820Registry(0x1820a4B7618BdE71Dce8cdc73aAB6C95905faD24);
-    bytes32 constant private TOKENS_RECIPIENT_INTERFACE_HASH = keccak256("ERC777TokensRecipient");
+    IERC1820RegistryUpgradeable private _erc1820;
 
     // use callbacks to track approved subscriptions
     mapping (address => bool) public isSubscribing;
@@ -56,23 +48,27 @@ contract ERC777Distributor is IERC777Recipient,SuperAppBase {
 
     constructor (
         ISuperfluid host,
-        IInstantDistributionAgreementV1 ida) public {
-        
-        owner = msg.sender;
-        _erc1820.setInterfaceImplementer(address(this), TOKENS_RECIPIENT_INTERFACE_HASH, address(this));
+        IInstantDistributionAgreementV1 ida,
+        string memory _name,
+        string memory _symbol,
+        address[] memory _defaultOperators
+    ) {
+        initialize(host, ida, _name, _symbol, _defaultOperators);
+    }
 
-         fDAIx = ISuperToken(0x745861AeD1EEe363b4AaA5F1994Be40b1e05Ff90);
+    function initialize (
+        ISuperfluid host,
+        IInstantDistributionAgreementV1 ida,
+        string memory _name,
+        string memory _symbol,
+        address[] memory _defaultOperators
+    ) public initializer {
+        __ERC777_init(_name, _symbol, _defaultOperators);
+        __Ownable_init();
+        _erc1820 = IERC1820RegistryUpgradeable(0x1820a4B7618BdE71Dce8cdc73aAB6C95905faD24);
+        _erc1820.setInterfaceImplementer(address(this), keccak256("ERC777TokensRecipient"), address(this));
+        fDAIx = ISuperToken(0x745861AeD1EEe363b4AaA5F1994Be40b1e05Ff90);
         tokenNameMapping[0x745861AeD1EEe363b4AaA5F1994Be40b1e05Ff90] = "fDAIx";
-
-         fUSDCx = ISuperToken(0x0F1D7C55A2B133E000eA10EeC03c774e0d6796e8);
-        tokenNameMapping[0x0F1D7C55A2B133E000eA10EeC03c774e0d6796e8] = "fUSDCx";
-
-         fTUSDx = ISuperToken(0xdF7B8461a1d9f57f12F88d97FC6131E36d302d81);
-        tokenNameMapping[0xdF7B8461a1d9f57f12F88d97FC6131E36d302d81] = "fTUSDx";
-
-         ETHx = ISuperToken(0xa623b2DD931C5162b7a0B25852f4024Db48bb1A0);
-        tokenNameMapping[0xa623b2DD931C5162b7a0B25852f4024Db48bb1A0] = "ETHx";
-
         
         _host = host;
         _ida = ida;
@@ -94,44 +90,6 @@ contract ERC777Distributor is IERC777Recipient,SuperAppBase {
             ),
             new bytes(0) // user data
         );
-
-        _host.callAgreement(
-            _ida,
-            abi.encodeWithSelector(
-                _ida.createIndex.selector,
-                fUSDCx,
-                INDEX_ID,
-                new bytes(0) // placeholder ctx
-            ),
-            new bytes(0) // user data
-        );
-
-        _host.callAgreement(
-            _ida,
-            abi.encodeWithSelector(
-                _ida.createIndex.selector,
-                fTUSDx,
-                INDEX_ID,
-                new bytes(0) // placeholder ctx
-            ),
-            new bytes(0) // user data
-        );
-
-        _host.callAgreement(
-            _ida,
-            abi.encodeWithSelector(
-                _ida.createIndex.selector,
-                ETHx,
-                INDEX_ID,
-                new bytes(0) // placeholder ctx
-            ),
-            new bytes(0) // user data
-        );
-    }
-
-    modifier onlyOwner(){
-        require(owner==msg.sender);
-        _;
     }
 
     function sharesOf(address user) view external returns(uint128){
@@ -239,46 +197,6 @@ contract ERC777Distributor is IERC777Recipient,SuperAppBase {
             ),
             new bytes(0) // user data
         );
-
-        _host.callAgreement(
-            _ida,
-            abi.encodeWithSelector(
-                _ida.updateSubscription.selector,
-                fUSDCx,
-                INDEX_ID,
-                user,
-                shareUnits,
-                new bytes(0) // placeholder ctx
-            ),
-            new bytes(0) // user data
-        );
-
-        _host.callAgreement(
-            _ida,
-            abi.encodeWithSelector(
-                _ida.updateSubscription.selector,
-                fTUSDx,
-                INDEX_ID,
-                user,
-                shareUnits,
-                new bytes(0) // placeholder ctx
-            ),
-            new bytes(0) // user data
-        );
-
-        _host.callAgreement(
-            _ida,
-            abi.encodeWithSelector(
-                _ida.updateSubscription.selector,
-                ETHx,
-                INDEX_ID,
-                user,
-                shareUnits,
-                new bytes(0) // placeholder ctx
-            ),
-            new bytes(0) // user data
-        );
-        
     }
 
     function abs(uint128 x,uint128 y) private pure returns (uint128) {
@@ -353,10 +271,24 @@ contract ERC777Distributor is IERC777Recipient,SuperAppBase {
         bytes calldata operatorData
     ) external override {
         //require(msg.sender == address(_token), "Simple777Recipient: Invalid token");
-
-        // do stuff
-        totalDonations += amount;
-        distribute(amount,msg.sender);
+        distribute(amount, msg.sender);
         emit DonationReceived( from, tokenNameMapping[msg.sender], amount,INDEX_ID,address(this),block.timestamp);
+    }
+
+    function _send(
+        address sender, 
+        address recipient, 
+        uint256 amount, 
+        bytes memory /* userData */, 
+        bytes memory /* operatorData */, 
+        bool /* requireReceptionAck */
+    ) internal override {
+        uint128 senderUnits = uint128(ERC777Upgradeable.balanceOf(sender));
+        uint128 recipientUnits = uint128(ERC777Upgradeable.balanceOf(recipient));
+        uint128 transfer = uint128(amount);
+
+        ERC777Upgradeable._send(sender, recipient, amount, "", "", false);
+        modifySub(sender, senderUnits - transfer);
+        modifySub(recipient, recipientUnits + transfer);
     }
 }
