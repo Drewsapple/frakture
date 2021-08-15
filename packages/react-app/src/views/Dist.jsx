@@ -3,8 +3,7 @@ import { utils, Contract, ethers } from "ethers";
 import { Button, Card, DatePicker, Divider, Input, List, notification, Progress, Slider, Spin, Switch } from "antd";
 import React, { useState, useCallback, useEffect } from "react";
 import { Address, AddressInput, Balance, DistributionTable, NFTUpload } from "../components";
-import SuperfluidSDK from "@superfluid-finance/js-sdk";
-import { useEventListener } from "../hooks";
+
 
 export default function Dist({
   address,
