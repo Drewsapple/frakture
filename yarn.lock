@@ -1615,7 +1615,7 @@
   dependencies:
     "@ethersproject/bignumber" "^5.4.0"
 
-"@ethersproject/contracts@5.4.1", "@ethersproject/contracts@^5.3.0":
+"@ethersproject/contracts@5.4.1", "@ethersproject/contracts@^5.3.0", "@ethersproject/contracts@^5.4.1":
   version "5.4.1"
   resolved "https://registry.yarnpkg.com/@ethersproject/contracts/-/contracts-5.4.1.tgz#3eb4f35b7fe60a962a75804ada2746494df3e470"
   integrity sha512-m+z2ZgPy4pyR15Je//dUaymRUZq5MtDajF6GwFbGAVmKz/RF+DNIPwF0k5qEcL3wPGVqUjFg2/krlCRVTU4T5w==
@@ -2296,6 +2296,11 @@
   dependencies:
     body-scroll-lock "^2.6.4"
 
+"@rarible/royalties@^0.7.2":
+  version "0.7.2"
+  resolved "https://registry.yarnpkg.com/@rarible/royalties/-/royalties-0.7.2.tgz#690af58c5266c42ccfd122415636840e748bf017"
+  integrity sha512-0SeG2Rq8x6q/NTkBnxFSvKKpF/iNGuc8UbIYgFyFPq9ve7NJjP4gK8OeijxOonk8gABT/vJPw9KH6Qs9pl/vuw==
+
 "@resolver-engine/core@^0.3.3":
   version "0.3.3"
   resolved "https://registry.yarnpkg.com/@resolver-engine/core/-/core-0.3.3.tgz#590f77d85d45bc7ecc4e06c654f41345db6ca967"
@@ -2478,7 +2483,7 @@
     ethereumjs-util "7.0.10"
     stack-trace "0.0.10"
 
-"@superfluid-finance/js-sdk@0.5.2":
+"@superfluid-finance/js-sdk@0.5.2", "@superfluid-finance/js-sdk@^0.5.2":
   version "0.5.2"
   resolved "https://registry.yarnpkg.com/@superfluid-finance/js-sdk/-/js-sdk-0.5.2.tgz#b9878e153db916449c60c24ee01eb009cf2b67cd"
   integrity sha512-vT3809MWOl4uMt1OL6PxHkbsIMzfh9t57JvwRb3pbTymGHSTq4LAXaURUkB5xMvY8hz+3JVNN5D/XKaKJ828iA==

@@ -1,8 +1,8 @@
 import { SyncOutlined } from "@ant-design/icons";
 import { utils } from "ethers";
-import { Button, Card, DatePicker, Divider, Input, List, Progress, Slider, Spin, Switch } from "antd";
+import { Button, Card, DatePicker, Divider, Input, InputNumber, List, Progress, Slider, Spin, Switch, notification } from "antd";
 import React, { useState } from "react";
-import { Address, Balance, NFTUpload } from "../components";
+import { AddressInput, NFTUpload } from "../components";
 import { useEventListener } from "../hooks";
 
 export default function Factory({
@@ -17,92 +17,75 @@ export default function Factory({
 }) {
   const [mintCount, setMintCount] = useState(1);
   const [nftStored, setNftStored] = useState("");
-  const events = useEventListener(writeContracts, "NFTFactory", "Transfer", localProvider, 1);
+  const [royaltyRecipient, setRoyaltyRecipient] = useState(null);
+  const [royaltyBPS, setRoyaltyBPS] = useState(null);
 
   return (
     <div>
       {/*
         ⚙️ Here is an example UI that displays and sets the purpose in your smart contract:
       */}
-      <div style={{ border: "1px solid #cccccc", padding: 16, width: 400, margin: "auto", marginTop: 64 }}>
+      <div style={{ border: "1px solid #cccccc", padding: 16, width: "70vw", margin: "auto", marginTop: 64 }}>
         <h2>Mint an NFT</h2>
         <Divider />
-        <NFTUpload {...{nftStored, setNftStored}}/>
+        <NFTUpload {...{ nftStored, setNftStored }} />
+        <Input
+          placeholder="NFT metadata CID"
+          type="text"
+          value={nftStored}
+          onChange={e => {
+            setNftStored(e.target.value);
+          }}
+        />
         <Input
           placeholder="# of NFTs to mint"
           type="number"
-          onChange={e => {setMintCount(e.target.value)}}
-        />
-        <Input
-          placeholder="# of distribution tokens to mint"
-          onChange={e => {}}
-        />
-        <Input
-          placeholder="Sell-on royalty percentage"
-          onChange={e => {}}
-        />
-        <Button onClick={async () => {
-          if(mintCount < 1 || nftStored == "") {
-            console.error("Fill the full form, please")
-          }
-          else {
-            console.log("Attempting mint", address, nftStored);
-            const result = tx(writeContracts.NFTFactory.mint(1, address, nftStored), update => {
-              console.log("📡 Transaction Update:", update);
-              if (update && (update.status === "confirmed" || update.status === 1)) {
-                console.log(" 🍾 Transaction " + update.hash + " finished!");
-                console.log(
-                  " ⛽️ " +
-                  update.gasUsed +
-                  "/" +
-                  (update.gasLimit || update.gas) +
-                  " @ " +
-                  parseFloat(update.gasPrice) / 1000000000 +
-                  " gwei",
-                );
-              }
-            })
-          }
-        }}>
-          Deploy
-        </Button>
-
-        <Divider />
-        Your Address:
-        <Address address={address} ensProvider={mainnetProvider} fontSize={16} />
-        <Divider />
-        {/* use utils.formatEther to display a BigNumber: */}
-        <h2>Your Balance:</h2>
-        <Balance address={address} provider={localProvider} price={price} />
-        <Divider />
-        Your Contract Address:
-        <Address
-          address={readContracts && readContracts.ERC777Distributor ? readContracts.ERC777Distributor.address : null}
-          ensProvider={mainnetProvider}
-          fontSize={16}
-        />
-      </div>
-
-      {/*
-        📑 Maybe display a list of events?
-          (uncomment the event and emit line in YourContract.sol! )
-      */}
-      <div style={{ width: 600, margin: "auto", marginTop: 32, paddingBottom: 32 }}>
-        <h2>Events:</h2>
-        <List
-          bordered
-          dataSource={events}
-          renderItem={item => {
-            return (
-              <List.Item key={item.blockNumber + "_" + item.sender + "_" + item.purpose}>
-                <Address address={item[1]} ensProvider={mainnetProvider} fontSize={16} />
-                {item[2]}
-              </List.Item>
-            );
+          onChange={e => {
+            setMintCount(e.target.value);
           }}
         />
+        <AddressInput placeholder="royalty recipient (can be a splitter)" onChange={e => {
+          setRoyaltyRecipient(e);
+        }} />
+        <h3>Sell-on royalty percentage:</h3>
+        <InputNumber type="" placeholder="Sell-on royalty percentage" 
+              min={0}
+              max={100}
+              formatter={value => `${value}%`}
+              parser={value => value.replace('%', '')}
+              onChange={value => {setRoyaltyBPS((value*10000)/100)}} />
+        <Button
+          onClick={async () => {
+            if (mintCount < 1 || nftStored == "" || !utils.isAddress(royaltyRecipient) || royaltyBPS == 0) {
+              console.error("Fill the full form, please");
+            } else {
+              console.log("Attempting mint", address, nftStored);
+              try{
+              const result = await tx(writeContracts.ERC1155Tradable.mintToWithRoyalty(
+                address, 
+                mintCount, 
+                nftStored,
+                royaltyRecipient,
+                royaltyBPS
+                ), update => {
+                  console.log("📡 Transaction Update:", update);
+                }
+              );
+              const transferSingle = (await result.wait()).events.find(e => e.event == "TransferSingle");
+              notification["success"]({
+                id: "transferComplete",
+                message: "Your NFT was minted",
+                duration: 0,
+                description: <>Check it out <a target="_blank" href={`https://testnets.opensea.io/assets/${transferSingle.address}/${transferSingle.args.id.toString()}`} >on OpenSea.</a></>,
+              });
+              }
+              catch(e) {}
+            }
+          }}
+        >
+          Deploy
+        </Button>
       </div>
-
     </div>
   );
 }

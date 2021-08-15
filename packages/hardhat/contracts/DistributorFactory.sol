@@ -29,9 +29,14 @@ contract DistributorFactory is Ownable{
       distributorContract = baseCont;
   }
 
-  function createDistributor(string memory _name, string memory _symbol, address[] memory _defaultOperators) public {
+  function createDistributor(
+    string memory _name, 
+    string memory _symbol, 
+    address[] memory _defaultOperators
+  ) public returns (address clone) {
     address clone = Clones.clone(distributorContract);
     ERC777Distributor(clone).initialize(_host,_ida, _name, _symbol, _defaultOperators);
+    ERC777Distributor(clone).transferOwnership(msg.sender);
     distributors.push(clone);
     emit AddressCreated(clone,msg.sender,block.timestamp);
   }
